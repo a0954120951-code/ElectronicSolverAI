@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>基本電學解題高手</title>
+    
+    <!-- 1. Styles & Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <script>
@@ -19,75 +21,642 @@
               ink: '#2c3e50',
               accent: '#e74c3c',
               highlight: '#f1c40f',
+            },
+            animation: {
+                'blob': 'blob 7s infinite',
+                'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+            },
+            keyframes: {
+                blob: {
+                    '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                    '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                    '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                    '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                },
+                fadeInUp: {
+                    '0%': { opacity: '0', transform: 'translateY(10px)' },
+                    '100%': { opacity: '1', transform: 'translateY(0)' },
+                }
             }
           },
         },
       }
     </script>
-    <!-- MathJax for rendering LaTeX formulas -->
+    
+    <!-- 2. MathJax Configuration -->
     <script>
       window.MathJax = {
         tex: {
           inlineMath: [['$', '$'], ['\\(', '\\)']],
-          displayMath: [] // Disable display math to force inline logic where possible
+          displayMath: [] 
         },
-        svg: {
-          fontCache: 'global'
-        },
-        options: {
-           enableMenu: false
-        }
+        svg: { fontCache: 'global' },
+        options: { enableMenu: false }
       };
     </script>
-    <script type="text/javascript" id="MathJax-script" async
-      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
-    </script>
-    <style>
-        body {
-            background-color: #f3f4f6;
-        }
-        /* Custom scrollbar for a notebook feel */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #888; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555; 
-        }
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 
-        /* Force MathJax to be inline to prevent block breaking */
+    <!-- 3. Import Map for Modules -->
+    <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "marked": "https://esm.sh/marked@12.0.0",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react-markdown": "https://esm.sh/react-markdown@^10.1.0"
+  }
+}
+</script>
+
+    <!-- 4. Global Styles -->
+    <style>
+        body { background-color: #f3f4f6; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        /* Force MathJax Inline */
         mjx-container[display="true"], mjx-container {
             display: inline-block !important;
             margin: 0 2px !important;
             vertical-align: middle !important;
             width: auto !important;
         }
+        .prose p { display: block; margin-bottom: 1em; }
         
-        /* Ensure paragraph text flows correctly */
-        .prose p {
-            display: block;
-            margin-bottom: 1em;
+        /* Notebook Lines */
+        .notebook-lines {
+            background-image: linear-gradient(#999 1px, transparent 1px);
+            background-size: 100% 2rem;
+            margin-top: 2rem;
+        }
+
+        .hidden { display: none !important; }
+        
+        /* Utility for accessible hiding */
+        .sr-only-input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
         }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
-    "react-markdown": "https://esm.sh/react-markdown@9?bundle"
-  }
-}
-</script>
 </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<body class="font-sans text-gray-800 relative min-h-screen">
+
+    <!-- Dummy root to prevent "Could not find root" errors in some environments -->
+    <div id="root" style="display: none;"></div>
+
+    <!-- Background Decor -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div class="absolute -top-20 -left-20 w-96 h-96 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div class="absolute top-40 -right-20 w-96 h-96 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-20 left-40 w-96 h-96 bg-yellow-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="relative z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-teal-400 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                    ⚡
+                </div>
+                <h1 class="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-teal-600">
+                    基本電學解題高手
+                </h1>
+            </div>
+            <button id="header-reset-btn" class="hidden md:hidden text-gray-500 hover:text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <main id="app-root" class="relative z-10 px-4 py-8">
+        
+        <!-- View: Upload Zone -->
+        <div id="view-upload" class="animate-fade-in-up">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">拍下題目，AI 老師幫你解</h2>
+                <p class="text-gray-600 max-w-lg mx-auto">支援手寫與印刷體題目。即時獲得詳細計算步驟、觀念解析與教學影片推薦。</p>
+            </div>
+            
+            <div id="drop-zone" class="w-full max-w-2xl mx-auto mt-10 relative border-4 border-dashed border-gray-300 bg-white hover:border-blue-400 rounded-3xl p-12 text-center transition-all duration-300 ease-in-out cursor-pointer">
+                <div class="space-y-6 pointer-events-none">
+                    <div class="flex justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-700 font-sans">上傳題目圖片</h3>
+                    <p class="text-gray-500 font-sans">拖放圖片到此處，或選擇下列方式</p>
+                    <div class="flex justify-center gap-4 flex-wrap pointer-events-auto">
+                        <button id="btn-select-file" class="px-6 py-3 bg-blue-600 text-white rounded-full font-medium shadow-lg hover:bg-blue-700 transition transform hover:-translate-y-1">
+                            從相簿選擇
+                        </button>
+                        <button id="btn-camera" class="px-6 py-3 bg-teal-600 text-white rounded-full font-medium shadow-lg hover:bg-teal-700 transition transform hover:-translate-y-1 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                            </svg>
+                            拍照解題
+                        </button>
+                    </div>
+                </div>
+                <!-- Changed hidden class to sr-only style to ensure events fire on all browsers -->
+                <input type="file" id="input-file" accept="image/*" class="sr-only-input" />
+                <input type="file" id="input-camera" accept="image/*" capture="environment" class="sr-only-input" />
+            </div>
+            <p class="text-center text-sm text-gray-400 mt-4 font-sans">支援 JPG, PNG 格式。AI 老師 24 小時在線。</p>
+        </div>
+
+        <!-- View: Analyzing -->
+        <div id="view-analyzing" class="hidden flex flex-col items-center justify-center py-20 animate-pulse">
+            <div class="w-24 h-24 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-8"></div>
+            <h3 class="text-2xl font-bold text-gray-700 mb-2">正在分析電路...</h3>
+            <p class="text-gray-500">AI 正在計算節點電壓與迴路電流</p>
+        </div>
+
+        <!-- View: Error -->
+        <div id="view-error" class="hidden text-center py-20 px-4">
+            <div class="text-6xl mb-4">😕</div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">發生了一點錯誤</h3>
+            <p id="error-msg" class="text-gray-600 mb-6 whitespace-pre-wrap max-w-lg mx-auto leading-relaxed"></p>
+            <button id="btn-retry" class="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition">
+                重試
+            </button>
+        </div>
+
+        <!-- View: Solution -->
+        <div id="view-solution" class="hidden w-full max-w-6xl mx-auto pb-20">
+            <!-- Mobile Controls -->
+            <div class="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b shadow-sm p-4 flex justify-between items-center md:hidden -mx-4 mb-4">
+                <div class="flex gap-2">
+                    <button id="tab-solution" class="px-3 py-1 rounded-full text-sm font-bold bg-blue-100 text-blue-700">解題筆記</button>
+                    <button id="tab-original" class="px-3 py-1 rounded-full text-sm font-bold text-gray-500">原題</button>
+                </div>
+                <button id="mobile-reset" class="px-4 py-1.5 bg-gray-800 text-white text-sm rounded-full shadow">重來</button>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-6 mt-4 md:mt-8">
+                <!-- Left Panel: Original Image -->
+                <div id="panel-original" class="hidden md:flex md:w-1/3 flex-col gap-4">
+                    <div class="bg-white p-3 rounded-2xl shadow-lg border border-gray-200 md:sticky md:top-24">
+                        <h3 class="text-gray-500 font-bold mb-2 text-sm uppercase tracking-wider flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                            原始題目
+                        </h3>
+                        <img id="display-original-img" src="" alt="Original Problem" class="w-full h-auto rounded-lg border border-gray-100" />
+                        <button id="desktop-reset" class="hidden md:block w-full mt-4 py-3 border-2 border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 hover:text-gray-800 transition">
+                            ⟳ 上傳新題目
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Solution -->
+                <div id="panel-solution" class="w-full md:w-2/3 flex flex-col gap-6">
+                    <div class="bg-paper min-h-[800px] rounded-sm shadow-2xl relative overflow-hidden border-l-8 border-gray-300 transform transition hover:scale-[1.002] duration-300">
+                        <!-- Notebook Effect -->
+                        <div class="absolute inset-0 pointer-events-none opacity-20 notebook-lines"></div>
+                        <div class="absolute left-8 md:left-16 top-0 bottom-0 w-0.5 bg-red-300 opacity-50 pointer-events-none"></div>
+
+                        <div class="relative p-6 md:p-12 md:pl-24">
+                            <div class="flex justify-between items-start mb-8 border-b-2 border-gray-800 pb-2">
+                                <h1 class="text-4xl text-ink font-handwritten transform -rotate-1">基本電學詳解</h1>
+                                <div class="text-gray-500 font-sans text-xs bg-gray-100 px-2 py-1 rounded shadow-sm border border-gray-200 rotate-2">AI Tutor Note</div>
+                            </div>
+
+                            <!-- Markdown Content -->
+                            <div id="markdown-content" class="prose prose-lg prose-p:font-handwritten prose-headings:font-handwritten prose-li:font-handwritten font-handwritten text-ink max-w-none leading-loose">
+                                <!-- Injected via JS -->
+                            </div>
+
+                            <!-- Video/Links Section -->
+                            <div id="grounding-section" class="hidden mt-12 relative bg-yellow-50 p-6 rounded-lg border border-yellow-200 shadow-sm rotate-1 mx-4">
+                                <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-32 h-8 bg-yellow-200/50 backdrop-blur-sm rotate-2 shadow-sm"></div>
+                                <h3 class="font-handwritten text-2xl text-gray-800 mb-4 flex items-center gap-2">
+                                    <span>🎬</span> 推薦學習影片與資源
+                                </h3>
+                                <div id="grounding-links" class="space-y-3 font-sans"></div>
+                            </div>
+
+                            <!-- Aux Tool Section -->
+                            <div class="mt-16 pt-8 border-t-2 border-dashed border-gray-300">
+                                <h3 class="font-handwritten text-2xl text-gray-600 mb-4">✏️ 輔助繪圖工具</h3>
+                                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 font-sans">
+                                    <p class="text-sm text-gray-500 mb-3">看不懂文字描述嗎？試著讓 AI 畫出「等效電路圖」或「電橋平衡示意圖」。</p>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="aux-prompt" placeholder="例如：畫出戴維寧等效電路圖..." class="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none">
+                                        <button id="btn-generate-diagram" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold transition shadow-lg hover:bg-indigo-700">生成圖表</button>
+                                    </div>
+                                    
+                                    <div id="aux-image-container" class="hidden mt-6 inline-block bg-white p-3 pb-12 shadow-xl border border-gray-200 transform -rotate-2 hover:rotate-0 transition duration-500">
+                                        <img id="aux-image-result" src="" class="max-w-full md:max-w-md border border-gray-100 bg-gray-100">
+                                        <div id="aux-image-caption" class="mt-4 font-handwritten text-xl text-center text-gray-600"></div>
+                                    </div>
+                                    <div id="aux-loading" class="hidden mt-4 text-center text-indigo-600 font-medium animate-pulse">
+                                        正在繪製中，請稍候...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Application Logic -->
+    <script type="module">
+        import { GoogleGenAI } from "@google/genai";
+        import { marked } from "marked";
+
+        // Global error handler for debugging
+        window.onerror = function(msg, url, line, col, error) {
+            console.error("Global Error:", msg, error);
+            // Only alert if it's a critical loading error that prevents UI interaction
+            if(document.getElementById('view-upload') && !document.getElementById('view-upload').classList.contains('hidden')) {
+               // alert("程式發生錯誤: " + msg); // Optional: enable for aggressive debugging
+            }
+            return false;
+        };
+
+        // ==========================================
+        // 🔧 設定區
+        // 請將您的 API Key 填入下方引號中
+        const API_KEY = "AIzaSyDijXNmYxG2oW0KJb7lumMrab5fOF59sNk"; 
+        // ==========================================
+
+        // --- Configuration ---
+        let ai = null;
+        
+        // --- State ---
+        const state = {
+            currentStatus: 'IDLE', // IDLE, ANALYZING, SOLVED, ERROR
+            solution: null,
+            originalImageBase64: null,
+            originalImageUrl: null
+        };
+
+        // --- DOM Elements ---
+        const views = {
+            upload: document.getElementById('view-upload'),
+            analyzing: document.getElementById('view-analyzing'),
+            error: document.getElementById('view-error'),
+            solution: document.getElementById('view-solution')
+        };
+        
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('input-file');
+        const cameraInput = document.getElementById('input-camera');
+
+        // --- Initialization ---
+        function init() {
+            try {
+                // Drag and Drop
+                dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-blue-500', 'bg-blue-50', 'scale-105'); });
+                dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('border-blue-500', 'bg-blue-50', 'scale-105'); });
+                dropZone.addEventListener('drop', handleDrop);
+                // Make the whole zone clickable for file input
+                dropZone.addEventListener('click', () => {
+                     fileInput.value = ''; // Clear value to allow re-selecting same file
+                     fileInput.click();
+                }); 
+
+                // Buttons
+                const btnFile = document.getElementById('btn-select-file');
+                const btnCam = document.getElementById('btn-camera');
+
+                if (btnFile) {
+                    btnFile.addEventListener('click', (e) => { 
+                        e.stopPropagation(); 
+                        fileInput.value = ''; // Clear previous selection
+                        fileInput.click(); 
+                    });
+                }
+                
+                if (btnCam) {
+                    btnCam.addEventListener('click', (e) => { 
+                        e.stopPropagation(); 
+                        cameraInput.value = ''; // Clear previous selection
+                        cameraInput.click(); 
+                    });
+                }
+                
+                if (fileInput) fileInput.addEventListener('change', (e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                        handleFile(e.target.files[0]);
+                    }
+                });
+
+                if (cameraInput) cameraInput.addEventListener('change', (e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                        handleFile(e.target.files[0]);
+                    }
+                });
+
+                // Reset Buttons
+                const resetFn = () => resetApp();
+                document.getElementById('btn-retry').addEventListener('click', resetFn);
+                document.getElementById('header-reset-btn').addEventListener('click', resetFn);
+                document.getElementById('mobile-reset').addEventListener('click', resetFn);
+                document.getElementById('desktop-reset').addEventListener('click', resetFn);
+
+                // Tabs (Mobile)
+                document.getElementById('tab-solution').addEventListener('click', () => setTab('solution'));
+                document.getElementById('tab-original').addEventListener('click', () => setTab('original'));
+
+                // Aux Diagram
+                document.getElementById('btn-generate-diagram').addEventListener('click', generateDiagram);
+                document.getElementById('aux-prompt').addEventListener('keydown', (e) => { if(e.key === 'Enter') generateDiagram(); });
+            } catch (err) {
+                console.error("Initialization error:", err);
+                alert("程式初始化失敗，請重新整理頁面。");
+            }
+        }
+
+        function switchView(viewName) {
+            Object.values(views).forEach(el => el.classList.add('hidden'));
+            views[viewName].classList.remove('hidden');
+            
+            // Toggle Reset Button in header
+            const headerReset = document.getElementById('header-reset-btn');
+            if(viewName === 'solution') headerReset.classList.remove('hidden');
+            else headerReset.classList.add('hidden');
+        }
+
+        function resetApp() {
+            state.currentStatus = 'IDLE';
+            state.solution = null;
+            state.originalImageBase64 = null;
+            state.originalImageUrl = null;
+            
+            // Clear inputs
+            fileInput.value = '';
+            cameraInput.value = '';
+            document.getElementById('aux-image-container').classList.add('hidden');
+            document.getElementById('aux-prompt').value = '';
+            
+            switchView('upload');
+        }
+
+        // --- File Handling ---
+        function handleDrop(e) {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50', 'scale-105');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        }
+
+        function handleFile(file) {
+            if (!file) return;
+            
+            // Check API Key immediately
+            if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
+                 alert("⚠️ 請注意：您尚未設定 API Key。\n請使用文字編輯器打開 index.html，並在程式碼第 150 行左右填入您的 Google GenAI API Key。");
+                 return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                alert('請上傳圖片檔案 (JPG/PNG)');
+                return;
+            }
+
+            // Show loading immediately to give feedback
+            switchView('analyzing');
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                const base64 = reader.result;
+                state.originalImageUrl = URL.createObjectURL(file);
+                state.originalImageBase64 = base64.split(',')[1];
+                
+                startAnalysis();
+            };
+            reader.onerror = () => {
+                alert("讀取圖片失敗");
+                resetApp();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- AI Logic ---
+        async function startAnalysis() {
+            try {
+                const solutionData = await solveElectricityProblem(state.originalImageBase64);
+                state.solution = solutionData;
+                renderSolution();
+                switchView('solution');
+            } catch (err) {
+                console.error(err);
+                
+                let displayMsg = "分析失敗: " + (err.message || "未知錯誤");
+                
+                // Friendly error message for Quota/Rate Limit issues
+                if (err.message && (err.message.includes('429') || err.message.includes('quota') || err.message.includes('RESOURCE_EXHAUSTED'))) {
+                    displayMsg = "⚠️ 免費版額度已達上限 (429 Error)。\n\n建議：\n1. 請稍等 1-2 分鐘後再試。\n2. 或者檢查您的 API Key 是否有綁定計費專案。\n3. 系統已自動切換至較輕量的模型，請再試一次。";
+                }
+                
+                document.getElementById('error-msg').innerText = displayMsg;
+                switchView('error');
+            }
+        }
+
+        async function solveElectricityProblem(base64Image) {
+            // Lazy init AI
+            if(!ai) {
+                 try {
+                    ai = new GoogleGenAI({ apiKey: API_KEY });
+                 } catch(e) {
+                    throw new Error("API Key 設定有誤，請檢查格式。");
+                 }
+            }
+            
+            // CHANGED: Use Flash model to avoid hitting strict rate limits on free tier
+            // Was: gemini-3-pro-preview
+            const modelId = "gemini-3-flash-preview"; 
+            
+            const prompt = `
+              你是一位專業的基本電學與物理家教。請分析這張圖片中的電學題目。
+              
+              請依據以下結構提供解答，並使用繁體中文（Traditional Chinese）：
+              
+              1. **題目核心概念**：簡短說明這題考的是什麼概念。
+              2. **解題步驟詳解**：
+                 - 請提供詳細的計算過程。
+                 - **關鍵規則**：數學公式一律使用 **行內 LaTeX** 格式（即使用單個 $ 符號），**嚴格禁止**使用區塊 LaTeX（即雙 $ 符號）。
+                 - 例如：寫 $V = I \\times R$ (正確)，不要寫 $$V = I \\times R$$ (錯誤)。
+                 - **重要**：在給出最終答案前，請務必在心中進行驗算。
+              3. **教學筆記**：給學生的易錯點提醒或快速解題技巧。
+              4. **推薦學習資源**：請利用搜尋工具找出相關的教學影片或文章連結。
+              
+              **排版與格式嚴格要求**：
+              - **禁止斷行**：數值與單位請保持在同一行。
+              - **連續性**：段落內的文字必須是連續的。
+              - 請保持語氣親切專業。
+            `;
+
+            const response = await ai.models.generateContent({
+                model: modelId,
+                contents: {
+                    parts: [
+                        { inlineData: { mimeType: "image/jpeg", data: base64Image } },
+                        { text: prompt },
+                    ],
+                },
+                config: {
+                    tools: [{ googleSearch: {} }],
+                    thinkingConfig: { thinkingBudget: 8192 },
+                },
+            });
+
+            const text = response.text || "無法產生解答，請稍後再試。";
+            const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+
+            return { markdownText: text, groundingChunks };
+        }
+
+        async function generateDiagram() {
+            const promptText = document.getElementById('aux-prompt').value;
+            if(!promptText.trim()) return;
+            
+            const btn = document.getElementById('btn-generate-diagram');
+            const loading = document.getElementById('aux-loading');
+            const resultContainer = document.getElementById('aux-image-container');
+            
+            btn.disabled = true;
+            btn.classList.add('bg-gray-400');
+            loading.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+
+            try {
+                if(!ai) ai = new GoogleGenAI({ apiKey: API_KEY });
+                const fullPrompt = `Create a clean, technical schematic circuit diagram or educational illustration for: ${promptText}. White background, high contrast, textbook style.`;
+                
+                // Note: Image generation might still hit limits, but less frequently than text
+                const response = await ai.models.generateContent({
+                    model: 'gemini-3-pro-image-preview',
+                    contents: { parts: [{ text: fullPrompt }] },
+                    config: { imageConfig: { aspectRatio: "4:3", imageSize: "1K" } }
+                });
+
+                let imageUrl = "";
+                if (response.candidates?.[0]?.content?.parts) {
+                    for (const part of response.candidates[0].content.parts) {
+                        if (part.inlineData) {
+                            imageUrl = `data:image/png;base64,${part.inlineData.data}`;
+                            break;
+                        }
+                    }
+                }
+
+                if(imageUrl) {
+                    document.getElementById('aux-image-result').src = imageUrl;
+                    document.getElementById('aux-image-caption').textContent = promptText;
+                    resultContainer.classList.remove('hidden');
+                }
+            } catch (e) {
+                alert("圖片生成失敗 (可能暫時達到使用上限)，請稍後再試。");
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('bg-gray-400');
+                loading.classList.add('hidden');
+            }
+        }
+
+        // --- Rendering ---
+        function renderSolution() {
+            const { markdownText, groundingChunks } = state.solution;
+            
+            // Set Original Image
+            document.getElementById('display-original-img').src = state.originalImageUrl;
+
+            // Render Markdown
+            const cleanText = markdownText
+                .replace(/\$\$/g, '$')
+                .replace(/\\\[/g, '$')
+                .replace(/\\\]/g, '$')
+                .replace(/  +$/gm, '');
+
+            const mdContent = document.getElementById('markdown-content');
+            mdContent.innerHTML = marked.parse(cleanText);
+
+            // Render Grounding Links
+            const groundingContainer = document.getElementById('grounding-section');
+            const linksContainer = document.getElementById('grounding-links');
+            linksContainer.innerHTML = '';
+            
+            if (groundingChunks && groundingChunks.length > 0) {
+                groundingContainer.classList.remove('hidden');
+                groundingChunks.forEach(chunk => {
+                    if (chunk.web?.uri) {
+                        const linkEl = document.createElement('a');
+                        linkEl.href = chunk.web.uri;
+                        linkEl.target = "_blank";
+                        linkEl.rel = "noopener noreferrer";
+                        linkEl.className = "flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 hover:border-blue-300 hover:shadow-md transition group";
+                        linkEl.innerHTML = `
+                            <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition">▶</div>
+                            <div class="flex-1">
+                                <div class="font-medium text-gray-800 line-clamp-1">${chunk.web.title}</div>
+                                <div class="text-xs text-gray-400">${new URL(chunk.web.uri).hostname}</div>
+                            </div>
+                        `;
+                        linksContainer.appendChild(linkEl);
+                    }
+                });
+            } else {
+                groundingContainer.classList.add('hidden');
+            }
+
+            // Trigger MathJax
+            if (window.MathJax) {
+                window.MathJax.typesetPromise();
+            }
+        }
+
+        function setTab(tab) {
+            const solutionPanel = document.getElementById('panel-solution');
+            const originalPanel = document.getElementById('panel-original');
+            const tabSol = document.getElementById('tab-solution');
+            const tabOrig = document.getElementById('tab-original');
+
+            if (tab === 'solution') {
+                solutionPanel.classList.remove('hidden');
+                originalPanel.classList.add('hidden'); 
+                originalPanel.classList.remove('flex'); 
+                originalPanel.classList.add('hidden', 'md:flex'); 
+
+                solutionPanel.classList.remove('hidden');
+                
+                tabSol.classList.add('bg-blue-100', 'text-blue-700');
+                tabSol.classList.remove('text-gray-500');
+                tabOrig.classList.remove('bg-blue-100', 'text-blue-700');
+                tabOrig.classList.add('text-gray-500');
+            } else {
+                solutionPanel.classList.add('hidden');
+                originalPanel.classList.remove('hidden', 'md:flex'); 
+                originalPanel.classList.add('flex'); 
+
+                tabOrig.classList.add('bg-blue-100', 'text-blue-700');
+                tabOrig.classList.remove('text-gray-500');
+                tabSol.classList.remove('bg-blue-100', 'text-blue-700');
+                tabSol.classList.add('text-gray-500');
+            }
+        }
+
+        // Run
+        init();
+
+    </script>
+</body>
 </html>
